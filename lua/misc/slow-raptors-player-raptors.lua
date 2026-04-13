@@ -1,5 +1,5 @@
 --Slow playable raptors/scav
--- bar-nuttyb-collective.github.io/configurator/
+-- nuttyb-community.github.io/nuttyb/configurator
 local unitDefs = UnitDefs or {}
 for unit, unitDef in pairs(unitDefs) do
 	if unit.name:find('raptor') or unit.name:find('_scav') then
