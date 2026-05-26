@@ -1,5 +1,5 @@
 {
-    "sha": "loc-2026-01-05-17:44:12",
+    "sha": "loc-2026-05-26-21:27:02",
     "files": [
         {
             "path": "lua/air-rework-t4.lua",
@@ -91,7 +91,7 @@
         },
         {
             "path": "lua/misc/slow-raptors-player-raptors.lua",
-            "data": "--Slow playable raptors/scav\n-- bar-nuttyb-collective.github.io/configurator/\nlocal unitDefs = UnitDefs or {}\nfor unit, unitDef in pairs(unitDefs) do\n\tif unit.name:find('raptor') or unit.name:find('_scav') then\n\t\tunitDef.speed = unitDef.speed * 0.5\n\tend\nend\n"
+            "data": "--Slow playable raptors/scav\n-- nuttyb-community.github.io/nuttyb/configurator\nlocal unitDefs = UnitDefs or {}\nfor unit, unitDef in pairs(unitDefs) do\n\tif unit.name:find('raptor') or unit.name:find('_scav') then\n\t\tunitDef.speed = unitDef.speed * 0.5\n\tend\nend\n"
         },
         {
             "path": "lua/misc/standalone-faction-drones.lua",
