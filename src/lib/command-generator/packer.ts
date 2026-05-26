@@ -54,11 +54,16 @@ export interface PackingResult {
  * as the first line, puts the `-- Source: ...` manifest on the second line,
  * and the remaining content (optionally minified) below.
  */
-function getEncodedContent(
-    sources: string[],
-    content: string,
-    minifyContent: boolean
-): string {
+/**
+ * Separates the first comment line of a Lua file from the remaining content.
+ *
+ * @param content The Lua file content
+ * @returns Cleaned first comment and remaining content
+ */
+function extractFirstCommentAndRemaining(content: string): {
+    firstComment: string;
+    remaining: string;
+} {
     const lines = content.split('\n');
     let firstCommentIndex = -1;
     for (const [i, rawLine] of lines.entries()) {
@@ -72,22 +77,42 @@ function getEncodedContent(
         break;
     }
 
-    let firstComment = '';
-    let remaining = content;
     if (firstCommentIndex !== -1) {
-        firstComment = lines[firstCommentIndex];
+        const rawComment = lines[firstCommentIndex];
+        const firstComment = rawComment.trim().replace(/^--+\s*/, '');
         const remainingLines = [
             ...lines.slice(0, firstCommentIndex),
             ...lines.slice(firstCommentIndex + 1),
         ];
-        remaining = remainingLines.join('\n');
+        return {
+            firstComment,
+            remaining: remainingLines.join('\n'),
+        };
     }
 
-    const preparedContent = minifyContent ? minify(remaining) : remaining;
+    return {
+        firstComment: '',
+        remaining: content,
+    };
+}
+
+/**
+ * Builds the final Lua content for a slot, merging top comments and adding source manifest.
+ */
+function buildFinalContent(
+    sources: string[],
+    firstComments: string[],
+    remainingContent: string,
+    minifyContent: boolean
+): string {
+    const preparedContent = minifyContent
+        ? minify(remainingContent)
+        : remainingContent;
     const sourceManifest = `-- Source: ${JSON.stringify(sources)}`;
 
-    if (firstComment) {
-        return `${firstComment}\n${sourceManifest}\n${preparedContent}`;
+    if (firstComments.length > 0) {
+        const mergedComment = `-- ${firstComments.join('-')}`;
+        return `${mergedComment}\n${sourceManifest}\n${preparedContent}`;
     }
     return `${sourceManifest}\n${preparedContent}`;
 }
@@ -96,24 +121,32 @@ function getEncodedContent(
  * Checks if adding new content to existing slot would exceed the size limit.
  *
  * @param existingSources Current source paths in the slot
- * @param existingContent Current slot content
+ * @param existingComments Current slot comments
+ * @param existingRemainingContent Current slot remaining content
  * @param newSourcePath Path of the new source to add
- * @param newContent Content of the new source to add
+ * @param newComment Comment of the new source to add
+ * @param newRemainingContent Remaining content of the new source to add
  * @returns true if addition fits, false otherwise
  */
 function canFitInSlot(
     existingSources: string[],
-    existingContent: string,
+    existingComments: string[],
+    existingRemainingContent: string,
     newSourcePath: string,
-    newContent: string
+    newComment: string,
+    newRemainingContent: string
 ): boolean {
     const combinedSources = [...existingSources, newSourcePath];
-    const combinedContent = existingContent
-        ? existingContent + '\n\n' + newContent
-        : newContent;
+    const combinedComments = newComment
+        ? [...existingComments, newComment]
+        : existingComments;
+    const combinedContent = existingRemainingContent
+        ? existingRemainingContent + '\n\n' + newRemainingContent
+        : newRemainingContent;
 
-    const finalContent = getEncodedContent(
+    const finalContent = buildFinalContent(
         combinedSources,
+        combinedComments,
         combinedContent,
         true
     );
@@ -125,9 +158,17 @@ function canFitInSlot(
 /** A slot being built, tracking sources and content separately */
 interface SlotBuilder {
     sources: string[];
-    content: string;
+    firstComments: string[];
+    remainingContent: string;
     /** If true, this slot contains a plain table and cannot accept more sources */
     isPlainTable: boolean;
+}
+
+interface ProcessedLuaSource {
+    path: string;
+    firstComment: string;
+    remainingContent: string;
+    priority: number;
 }
 
 /**
@@ -151,61 +192,80 @@ export function packLuaSources(
         };
     }
 
+    const processedSources: ProcessedLuaSource[] = sources.map((source) => {
+        const { firstComment, remaining } = extractFirstCommentAndRemaining(
+            source.content
+        );
+        return {
+            path: source.path,
+            firstComment,
+            remainingContent: remaining,
+            priority: source.priority,
+        };
+    });
+
     const slots: SlotBuilder[] = [];
     let currentSlot: SlotBuilder = {
         sources: [],
-        content: '',
+        firstComments: [],
+        remainingContent: '',
         isPlainTable: false,
     };
 
-    for (const source of sources) {
-        const content = source.content;
+    for (const source of processedSources) {
+        const remainingContent = source.remainingContent;
         const sourceIsPlainTable =
-            slotType === 'tweakunits' && isPlainTableFormat(content);
+            slotType === 'tweakunits' && isPlainTableFormat(remainingContent);
 
         // For tweakunits: plain table sources cannot be merged with anything
         // - If current slot has a plain table, start a new slot
         // - If new source is a plain table and current slot has content, start a new slot
         const needsNewSlotForPlainTable =
             currentSlot.isPlainTable ||
-            (sourceIsPlainTable && currentSlot.content);
+            (sourceIsPlainTable && currentSlot.remainingContent);
 
         const fitsInCurrentSlot =
             !needsNewSlotForPlainTable &&
             canFitInSlot(
                 currentSlot.sources,
-                currentSlot.content,
+                currentSlot.firstComments,
+                currentSlot.remainingContent,
                 source.path,
-                content
+                source.firstComment,
+                remainingContent
             );
 
         if (fitsInCurrentSlot) {
             // Source fits in current slot
-            if (currentSlot.content) {
-                currentSlot.content += '\n\n' + content;
+            if (currentSlot.remainingContent) {
+                currentSlot.remainingContent += '\n\n' + remainingContent;
             } else {
-                currentSlot.content = content;
+                currentSlot.remainingContent = remainingContent;
             }
             currentSlot.sources.push(source.path);
+            if (source.firstComment) {
+                currentSlot.firstComments.push(source.firstComment);
+            }
             // Mark slot as plain table if this source is one
             if (sourceIsPlainTable) {
                 currentSlot.isPlainTable = true;
             }
         } else {
             // Source doesn't fit or needs isolation - start new slot
-            if (currentSlot.content) {
+            if (currentSlot.remainingContent) {
                 slots.push(currentSlot);
             }
             currentSlot = {
                 sources: [source.path],
-                content,
+                firstComments: source.firstComment ? [source.firstComment] : [],
+                remainingContent,
                 isPlainTable: sourceIsPlainTable,
             };
         }
     }
 
     // Push the last slot
-    if (currentSlot.content) {
+    if (currentSlot.remainingContent) {
         slots.push(currentSlot);
     }
 
@@ -218,18 +278,20 @@ export function packLuaSources(
 
     // Generate structured commands with slot metadata
     const commands: Command[] = slots.map((slot, i) => {
-        const finalMinifiedContent = getEncodedContent(
+        const finalMinifiedContent = buildFinalContent(
             slot.sources,
-            slot.content,
+            slot.firstComments,
+            slot.remainingContent,
             true
         );
         const encoded = encode(finalMinifiedContent);
         const slotName = formatSlotName(slotType, i);
         const commandString = `!bset ${slotName} ${encoded}`;
 
-        const finalUnminifiedContent = getEncodedContent(
+        const finalUnminifiedContent = buildFinalContent(
             slot.sources,
-            slot.content,
+            slot.firstComments,
+            slot.remainingContent,
             false
         );
 
