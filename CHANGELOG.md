@@ -10,6 +10,7 @@ visitors. To scaffold a draft from recent commits, run `bun run changelog-draft`
   community links and the changelog.
 - Short description added to the configurator page.
 - Removed unit launchers that are not viable. Moved the remaining from Epic Commando to T3 aides build options.
+- Added tooltips to the unit launchers.
 
 ## 2026-06-09
 

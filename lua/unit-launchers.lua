@@ -6,7 +6,10 @@ do
     local UnitDefs, armbotrail = UnitDefs or {}, 'armbotrail'
     local NewUnits = {
         armvadert4 = {
-            customparams = { i18n_en_humanname = 'Epic Tumbleweed Launcher' },
+            customparams = {
+                i18n_en_humanname = 'Epic Tumbleweed Launcher',
+                i18n_en_tooltip = 'Launches Epic Tumbleweeds to your enemy. Huge damage with friendly fire.',
+            },
             weapondefs = {
                 arm_botrail = {
                     range = 7550,
@@ -21,7 +24,10 @@ do
             },
         },
         armt3 = {
-            customparams = { i18n_en_humanname = 'Armada T3 Launcher' },
+            customparams = {
+                i18n_en_humanname = 'Armada T3 Launcher',
+                i18n_en_tooltip = 'Launches random Armada T3 units.',
+            },
             weapondefs = {
                 arm_botrail = {
                     stockpiletime = 2,
@@ -38,7 +44,10 @@ do
             },
         },
         cort3 = {
-            customparams = { i18n_en_humanname = 'Cortex T3 Launcher' },
+            customparams = {
+                i18n_en_humanname = 'Cortex T3 Launcher',
+                i18n_en_tooltip = 'Launches random Cortex T3 units.',
+            },
             weapondefs = {
                 arm_botrail = {
                     stockpiletime = 2,
@@ -55,7 +64,10 @@ do
             },
         },
         legt3 = {
-            customparams = { i18n_en_humanname = 'Legion T3 Launcher' },
+            customparams = {
+                i18n_en_humanname = 'Legion T3 Launcher',
+                i18n_en_tooltip = 'Launches random Legion T3 units.',
+            },
             weapondefs = {
                 arm_botrail = {
                     stockpiletime = 2,
