@@ -14,6 +14,7 @@ export const LUA_PRIORITIES: Record<string, number> = {
     'lua/evocom-leg.lua': 1,
     'lua/main-defs.lua': 2,
     'lua/builders-t3.lua': 3,
+    'lua/defences-t3.lua': 4,
     'lua/defences-t4.lua': 4,
     'lua/mini-bosses.lua': 5,
     'lua/mega-nuke.lua': 5,
@@ -88,13 +89,13 @@ export const BASE_COMMANDS = [
     '!unit_restrictions_nonukes 0',
     '!draft_mode disabled',
     '!unit_restrictions_notacnukes 0',
-    '$welcome-message See https://nuttyb.org for mod info and setup instructions',
+    '$welcome-message This lobby was created using https://nuttyb-community.github.io/nuttyb/ configurator. Links for widgets and useful resources can be found there on the About page.',
     '!unit_market 0',
     '!evocom 0',
     '!nowasting all',
     '!bSet unit_restrictions_nonukes 1',
     '!bSet raptor_queen_count $queenCount$',
-    '!rename Community NuttyB [$presetDifficulty$] $?[$lobbyName$]?$',
+    '!rename Community NuttyB $?[$lobbyName$]?$',
     '!balance',
 ] as const;
 
@@ -106,6 +107,7 @@ export const BASE_TWEAKS = {
         '~lua/main-defs.lua',
         '~lua/eco-t3.lua',
         '~lua/builders-t3.lua',
+        '~lua/defences-t3.lua',
         '~lua/unit-launchers.lua',
         '~lua/lrpc-rebalance.lua',
         '~lua/air-rework-t4.lua',
@@ -322,7 +324,7 @@ export const CONFIGURATION_MAPPING: ValueMapping = {
         },
     },
     isRFLRPCT4: {
-        description: 'Epic RFLRPC',
+        description: 'T4 RFLRPC',
         values: {
             true: { tweakdefs: ['~lua/rflrpc-t4.lua'] },
             false: undefined,
